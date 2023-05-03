@@ -1,8 +1,9 @@
 type DamageRequest = {
-  id: number;
+  damageRequestID: number;
   carID: number;
   image: string;
   message: string;
   car: Car;
   requestDate: string;
+  user: User;
 };

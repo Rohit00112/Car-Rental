@@ -29,14 +29,12 @@ const CarDetails = (id: any) => {
 
   const closeHandler = () => {
     setConfirmVisible(false);
-    console.log("closed");
   };
 
   const [car, setCar] = useState<Car>();
   const [errorMessage, setErrorMessage] = useState("Initial error message");
 
   useEffect(() => {
-    alert(id.params.id);
     getCarDetails(id.params.id)
       .then((car: Car) => {
         setCar(car);
@@ -92,6 +90,7 @@ const CarDetails = (id: any) => {
             <Spacer y={-1.5} />
             <Text size={40} weight="bold" css={{ paddingLeft: "1rem" }}>
               Rs. {car?.price}
+              <Spacer x={0.5} />
             </Text>
             <Spacer y={-3} />
             <Text size={17} css={{ paddingLeft: "1rem" }}>
@@ -99,10 +98,9 @@ const CarDetails = (id: any) => {
             </Text>
             <Spacer y={-1} />
             <Text size={18} css={{ paddingLeft: "1rem" }}>
-              Pedona - Fashion & Sport Theme for WordPress. Modern clean latest
-              ecommerce woocommerce wordpress template. Online store single
-              product page web design inspiration.Pedona - Fashion & Sport Theme
-              for WordPress. Modern clean latest ecommerce woocommerce wordpress
+              THis car name is {car?.carName} and it is{" "}
+              {car?.isAvailable ? "Available" : "Not Available"}. It is a{" "}
+              {car?.make} {car?.carModel} manufactured in {car?.manufactureYear}
             </Text>
             <Spacer y={2} />
             <Grid.Container direction="row">

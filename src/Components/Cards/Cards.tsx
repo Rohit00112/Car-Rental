@@ -22,7 +22,6 @@ export default function Cards(props: { car: Car }) {
           Model: {car.carModel}
         </Text>
         <Spacer y={1} />
-        {/*  Button to view more details about the car */}
         <Button
           auto
           color="primary"

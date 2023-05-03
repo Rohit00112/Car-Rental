@@ -2,12 +2,15 @@
 
 import { API_URL_Image } from "@/Components/api/API";
 import getAllDamageRequests from "@/Services/Damage/AllDamageRequest";
+import createRepairDamageBills from "@/Services/Damage/Damagebill";
 import {
   Button,
   Col,
   Container,
   Grid,
   Image,
+  Input,
+  Modal,
   Row,
   Table,
   Text,
@@ -15,25 +18,19 @@ import {
 } from "@nextui-org/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { IoReceiptOutline } from "react-icons/io5";
-import { toast } from "react-toastify";
+import { IoCloseSharp, IoReceiptOutline } from "react-icons/io5";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const DamageRequests = () => {
-  const [statusVisible, setStatusVisible] = useState(false);
-  const statusHandler = () => setStatusVisible(true);
-
-  const [deleteVisible, setDeleteVisible] = useState(false);
-  const deleteHandler = () => {
-    setDeleteVisible(true);
-  };
+  const [addVisible, setAddVisible] = useState(false);
+  const addHandler = () => setAddVisible(true);
 
   const closeHandler = () => {
-    setDeleteVisible(false);
-    setStatusVisible(false);
+    setAddVisible(false);
+
     console.log("closed");
   };
-
   //   -------------------------- damage requests -------------------------
 
   const [damages, setDamages] = useState<DamageRequest[]>([]);
@@ -44,14 +41,40 @@ const DamageRequests = () => {
         setDamages(data);
         console.log(data);
       })
-      .catch((e: any) => toast.error(e.message));
+      .catch((e) => toast.error(e.description));
   };
 
   useEffect(() => {
     getDamageRequests();
     console.log(damages);
-    // console.log(offers);
   }, []);
+
+  // ------------------------------
+
+  const [selectedItem, setSelectedItem] = useState<number>(0);
+
+  const initialRepairBill: {
+    damageRequestID: number;
+    repairBillDescriptions: { description: string; price: number }[];
+  } = {
+    damageRequestID: selectedItem,
+    repairBillDescriptions: [],
+  };
+
+  const initialBill: { description: string; price: number } = {
+    description: "",
+    price: 0,
+  };
+
+  const [billDetails, setBillDetails] = useState(initialBill);
+  const [repairBills, setRepairBills] = useState(initialRepairBill);
+
+  const handleDamageRepairBill = (event: any) => {
+    const { name, value } = event.target;
+    const newRepairBills = { ...billDetails, [name]: value };
+
+    setBillDetails(newRepairBills);
+  };
 
   return (
     <>
@@ -93,7 +116,7 @@ const DamageRequests = () => {
             <Table.Body>
               {damages.map((item: DamageRequest) => {
                 return (
-                  <Table.Row key={item.id}>
+                  <Table.Row key={item.damageRequestID}>
                     <Table.Cell>
                       <Image
                         width={50}
@@ -110,24 +133,6 @@ const DamageRequests = () => {
                     <Table.Cell>{item?.message}</Table.Cell>
                     <Table.Cell>
                       <Row justify="center" align="center">
-                        {/* {item.status == 0 && (
-                          <Col css={{ d: "flex" }}>
-                            <Tooltip content="Change Status">
-                              <Button
-                                onPress={() => {
-                                  setSelectedRent(item);
-                                  statusHandler();
-                                }}
-                                light
-                                auto
-                                color="warning"
-                                icon={
-                                  <IoRepeatOutline size={20} color="#979797" />
-                                }
-                              ></Button>
-                            </Tooltip>
-                          </Col>
-                        )} */}
                         <Col css={{ d: "flex" }}>
                           <Tooltip
                             content="Generate Bill"
@@ -135,10 +140,10 @@ const DamageRequests = () => {
                             onProgress={() => console.log("Bill Generated")}
                           >
                             <Button
-                              //   onPress={() => {
-                              //     setSelectedRent(item);
-                              //     deleteHandler();
-                              //   }}
+                              onPress={() => {
+                                setSelectedItem(item.damageRequestID);
+                                addHandler();
+                              }}
                               light
                               auto
                               color="default"
@@ -161,64 +166,101 @@ const DamageRequests = () => {
         </Container>
       </Grid.Container>
 
-      {/* Modal for delete */}
-      {/* <Modal
-        width="25%"
+      {/* Modal for Description  */}
+      <Modal
+        width="30%"
         closeButton
         preventClose
-        aria-labelledby="edit"
-        open={deleteVisible}
+        aria-labelledby="add"
+        open={addVisible}
         onClose={closeHandler}
       >
         <Modal.Header>
           <Text id="modal-title" b size={18}>
-            Delete Car
+            Add Car
           </Text>
         </Modal.Header>
         <Modal.Body>
-          Do you want to delete {selectedRent?.customer?.userName}'s Rent
-        </Modal.Body>
-        <Modal.Footer>
-          <Button auto flat color="error" onPress={closeHandler}>
-            Close
-          </Button>
+          <Input
+            clearable
+            size="lg"
+            bordered
+            label="Message"
+            name="description"
+            value={billDetails.description}
+            onChange={handleDamageRepairBill}
+          />
+          <Input
+            clearable
+            size="lg"
+            bordered
+            label="Price"
+            type="number"
+            name="price"
+            value={billDetails.price}
+            onChange={handleDamageRepairBill}
+          />
           <Button
             auto
-            onPress={() => {
-              deleteRent(selectedRent?.id ?? 0)
-                .then(() => {
-                  getRents();
-                  toast.success("Rent Deleted Successfully");
-                })
-                .catch((error) => {
-                  toast.error(`${error.message}`);
-                });
-              setDeleteVisible(false);
-            }}
             css={{ backgroundColor: "#11181C" }}
+            onPress={() => {
+              console.log(repairBills);
+              if (billDetails.description == "") {
+                toast.error("Please Enter Message");
+                return;
+              }
+              if (billDetails.price == 0) {
+                toast.error("Please Enter Price");
+                return;
+              }
+              repairBills.repairBillDescriptions.push(billDetails);
+              setBillDetails(initialBill);
+            }}
           >
-            Delete
+            Add
           </Button>
-        </Modal.Footer>
-      </Modal> */}
 
-      {/* Modal for change status */}
-      {/* <Modal
-        width="25%"
-        closeButton
-        preventClose
-        aria-labelledby="edit"
-        open={statusVisible}
-        onClose={closeHandler}
-      >
-        <Modal.Header>
-          <Text id="modal-title" b size={18}>
-            Change Status
-          </Text>
-        </Modal.Header>
-        <Modal.Body>
-          Do you want to change status of {selectedRent?.customer?.userName}'s
-          Rent
+          <Table
+            aria-label="Example table with dynamic content"
+            css={{
+              height: "auto",
+              minWidth: "100%",
+            }}
+          >
+            <Table.Header>
+              <Table.Column>Message</Table.Column>
+              <Table.Column>Price</Table.Column>
+              <Table.Column width="5%">Action</Table.Column>
+            </Table.Header>
+            <Table.Body>
+              {repairBills.repairBillDescriptions.map((item, index) => {
+                return (
+                  <Table.Row key={index}>
+                    <Table.Cell>{item.description}</Table.Cell>
+                    <Table.Cell>{item.price}</Table.Cell>
+                    <Table.Cell>
+                      <Button
+                        onPress={() => {
+                          const newRepairBillDescriptions = [
+                            ...repairBills.repairBillDescriptions,
+                          ];
+                          newRepairBillDescriptions.splice(index, 1);
+                          setRepairBills({
+                            ...repairBills,
+                            repairBillDescriptions: newRepairBillDescriptions,
+                          });
+                        }}
+                        light
+                        auto
+                        color="error"
+                        icon={<IoCloseSharp size={20} fill="currentColor" />}
+                      ></Button>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })}
+            </Table.Body>
+          </Table>
         </Modal.Body>
         <Modal.Footer>
           <Button auto flat color="error" onPress={closeHandler}>
@@ -226,24 +268,25 @@ const DamageRequests = () => {
           </Button>
           <Button
             auto
-            onPress={() => {
-              approveRent(selectedRent?.id ?? 0)
+            css={{ backgroundColor: "#11181C" }}
+            onClick={() => {
+              createRepairDamageBills({
+                damageRequestID: selectedItem,
+                repairBillDescriptions: repairBills.repairBillDescriptions,
+              })
                 .then(() => {
-                  getRents();
-                  toast.success("Rent Approved Successfully");
-                  setStatusVisible(false);
+                  toast.success("Damage Bill Created Successfully");
                 })
                 .catch((error) => {
-                  toast.error(`${error.message}`);
+                  toast.error(`${error.description}`);
                 });
             }}
-            css={{ backgroundColor: "#11181C" }}
           >
-            Confirm
+            Save
           </Button>
         </Modal.Footer>
         <ToastContainer />
-      </Modal> */}
+      </Modal>
     </>
   );
 };

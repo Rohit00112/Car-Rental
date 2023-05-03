@@ -60,6 +60,10 @@ export default function CustomNav() {
       name: "Customer",
       link: "/admin/customer",
     },
+    {
+      name: "Repair Bill",
+      link: "/admin/damageBill",
+    },
   ];
 
   const router = useRouter();

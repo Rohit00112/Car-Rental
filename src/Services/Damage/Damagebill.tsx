@@ -1,17 +1,12 @@
 import { apiInstance } from "@/Components/api/API";
 import { handleHttpError } from "@/Components/api/httpErrors";
 
-export default async function addDamageRequest(rent: any) {
+export default async function createDamageBillDetails(data: any) {
   try {
     const user = JSON.parse(localStorage.getItem("User") ?? "");
-    const formData = new FormData();
-    formData.append("CarID", rent.carID);
-    formData.append("Image", rent.image);
-    formData.append("Message", rent.message);
 
-    const res = await apiInstance.post("/DamageRequest", formData, {
+    const res = await apiInstance.post("/RepairBillDescription", data, {
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${user.accessToken}`,
       },
     });

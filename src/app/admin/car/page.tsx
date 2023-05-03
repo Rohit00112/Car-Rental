@@ -5,9 +5,11 @@ import { DeleteIcon } from "@/Components/icons/DeleteIcon";
 import { EditIcon } from "@/Components/icons/EditIcon";
 import { EyeIcon } from "@/Components/icons/EyeIcon";
 import addCar from "@/Services/car/AddCar";
+import addOffer from "@/Services/car/AddOffer";
 import getAllCars from "@/Services/car/CarService";
 import deleteCar from "@/Services/car/DeleteCar";
 import updateCar from "@/Services/car/EditCar";
+import getAllRents from "@/Services/rent/GetAllRents";
 import {
   Badge,
   Button,
@@ -25,12 +27,10 @@ import {
   Tooltip,
 } from "@nextui-org/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
 import { IoGiftOutline } from "react-icons/io5";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import addOffer from "@/Services/car/AddOffer";
 
 const Car = () => {
   const [addVisible, setAddVisible] = useState(false);
@@ -42,11 +42,13 @@ const Car = () => {
   const [editVisible, setEditVisible] = useState(false);
   const editHandler = () => setEditVisible(true);
 
-  const [deleteVisible, setDeleteVisible] = useState(false);
-  const deleteHandler = () => setDeleteVisible(true);
-
   const [offerVisible, setOfferVisible] = useState(false);
   const offerHandler = () => setOfferVisible(true);
+
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const deleteHandler = () => {
+    setDeleteVisible(true);
+  };
 
   const closeHandler = () => {
     setAddVisible(false);
@@ -54,39 +56,24 @@ const Car = () => {
     setViewVisible(false);
     setDeleteVisible(false);
     setOfferVisible(false);
+    console.log("closed");
   };
-
-  const router = useRouter();
 
   const initialDetails: Car = {
     carId: 0,
     carName: "",
     image: "",
     price: 0,
-    make: "",
     carModel: "",
-    manufactureYear: 0,
+    make: "",
+    manufactureYear: 2023,
     registrationNumber: "",
-    isAvailable: true,
+    isAvailable: false,
   };
-
-  const initialOffer: Offer = {
-    carID: 0,
-    message: "",
-    discount: 0,
-    expiryDate: "",
-  };
-
-  const [offerDetail, setOfferDetail] = useState<Offer>(initialOffer);
-  const handleOfferDetails = (event: any) => {
-    const { name, value } = event.target;
-    const newOfferDetails = { ...offerDetail, [name]: value };
-    setOfferDetail(newOfferDetails);
-  };
-
-  const [selectedCar, setSelectedCar] = useState<Car>(initialDetails);
 
   const [addDetails, setAddDetails] = useState(initialDetails);
+  const [selectedItem, setSelectedItem] = useState<Car>(initialDetails);
+  const [title, setTitle] = useState("Cars");
 
   const handleAddDetails = (event: any) => {
     const { name, value } = event.target;
@@ -99,16 +86,16 @@ const Car = () => {
 
   const updateCarDetails = (event: any) => {
     const { name, value } = event.target;
-    const newUpdateDetials = { ...selectedCar, [name]: value };
+    const newUpdateDetials = { ...selectedItem, [name]: value };
     if (name == "image") {
       newUpdateDetials.image = event.target.files[0];
     }
     if (newUpdateDetials != null) {
-      setSelectedCar(newUpdateDetials);
+      setSelectedItem(newUpdateDetials);
     }
   };
 
-  const [cars, setCars] = useState<any>([]);
+  const [cars, setCars] = useState<Car[]>([]);
 
   const getCars = () => {
     getAllCars()
@@ -121,6 +108,27 @@ const Car = () => {
   useEffect(() => {
     getCars();
   }, []);
+
+  // ------------------ offer ----------------
+  const initialOffer = {
+    message: "string",
+    discountPercent: 0,
+    publishedDate: new Date().toISOString(),
+    expireDate: "",
+  };
+
+  const [offerDetails, setOfferDetails] = useState(initialOffer);
+
+  const handleOfferDetials = (event: any) => {
+    const { name, value } = event.target;
+    let newOfferDetails = { ...offerDetails };
+    if (name == "expireDate") {
+      newOfferDetails.expireDate = new Date(value).toISOString();
+    } else {
+      newOfferDetails = { ...offerDetails, [name]: value };
+    }
+    setOfferDetails(newOfferDetails);
+  };
 
   return (
     <>
@@ -137,7 +145,7 @@ const Car = () => {
           <Grid justify="space-between" alignItems="center">
             <Link href="#"></Link>
             <Text size={40} weight="bold">
-              Cars
+              {title}
             </Text>
           </Grid>
           <Link href="#" style={{ textDecoration: "none" }}>
@@ -155,6 +163,82 @@ const Car = () => {
           </Link>
         </Container>
         <Container>
+          <Grid.Container gap={2} justify="flex-end">
+            <Grid>
+              <Button
+                color="primary"
+                auto
+                size="sm"
+                css={{ backgroundColor: "$accents9", color: "white" }}
+                onPress={() => {
+                  setTitle("All Cars");
+                  getAllCars()
+                    .then((cars: Car[]) => {
+                      setCars(cars);
+                    })
+                    .catch((e) => toast.error(e.message));
+                }}
+              >
+                All Cars
+              </Button>
+            </Grid>
+            <Grid>
+              <Button
+                color="secondary"
+                auto
+                size="sm"
+                css={{ backgroundColor: "$accents9", color: "white" }}
+                onPress={() => {
+                  setTitle("Frequently Rented Cars");
+                  getAllRents()
+                    .then((rents: Rent[]) => {
+                      const frequentlyRentedCar: Car[] = [];
+                      rents.forEach((rent) => {
+                        frequentlyRentedCar.push(rent.car);
+                      });
+                      setCars(frequentlyRentedCar);
+                    })
+                    .catch((e) => toast.error(e.message));
+                }}
+              >
+                Frequently Rented Cars
+              </Button>
+            </Grid>
+            <Grid>
+              <Button
+                color="success"
+                auto
+                size="sm"
+                css={{ backgroundColor: "$accents9", color: "white" }}
+                onPress={() => {
+                  setTitle("Never Rented Cars");
+                  getAllCars()
+                    .then((cars: Car[]) => {
+                      getAllRents()
+                        .then((rents: Rent[]) => {
+                          const neverRentedCar: Car[] = [];
+                          const allRentedCars: number[] = [];
+                          rents.forEach((rent) => {
+                            allRentedCars.push(rent.car.carId);
+                          });
+                          cars.forEach((car) => {
+                            if (!allRentedCars.includes(car.carId)) {
+                              neverRentedCar.push(car);
+                            }
+                          });
+                          setCars(neverRentedCar);
+                        })
+                        .catch((e) => toast.error(e.message));
+                    })
+                    .catch((e) => toast.error(e.message));
+                }}
+              >
+                Never Rented Cars
+              </Button>
+            </Grid>
+          </Grid.Container>
+        </Container>
+        <Container>
           <Table
             bordered
             shadow={false}
@@ -166,118 +250,115 @@ const Car = () => {
             }}
           >
             <Table.Header>
-              <Table.Column>Car Name</Table.Column>
               <Table.Column>Image</Table.Column>
+              <Table.Column>NAME</Table.Column>
               <Table.Column>Price</Table.Column>
               <Table.Column>Make</Table.Column>
-              <Table.Column>Car Model</Table.Column>
-              <Table.Column>Manufacture Year</Table.Column>
-              <Table.Column>Registration Number</Table.Column>
-              <Table.Column>Availability</Table.Column>
+              <Table.Column>Model</Table.Column>
+              <Table.Column>Reg. No.</Table.Column>
+              <Table.Column>Manufacture Date</Table.Column>
+              <Table.Column>Status</Table.Column>
               <Table.Column css={{ width: "15%" }}>ACTION</Table.Column>
             </Table.Header>
             <Table.Body>
-              {cars.map((car: any) => (
-                <Table.Row key={car.id}>
-                  <Table.Cell>{car.carName}</Table.Cell>
-                  <Table.Cell>
-                    <Image
-                      src={`${API_URL_Image}${car.image}`}
-                      width={100}
-                      height={100}
-                      alt="car image"
-                    />
-                  </Table.Cell>
-                  <Table.Cell>{car.price}</Table.Cell>
-                  <Table.Cell>{car.make}</Table.Cell>
-                  <Table.Cell>{car.carModel}</Table.Cell>
-                  <Table.Cell>{car.manufactureYear}</Table.Cell>
-
-                  <Table.Cell>{car.registrationNumber}</Table.Cell>
-                  <Table.Cell>
-                    <Badge color={car.isAvailable ? "success" : "error"}>
-                      {car.isAvailable ? "Available" : "Not Available"}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Row justify="center" align="center">
-                      <Col css={{ d: "flex" }}>
-                        <Tooltip content="Offer">
-                          <Button
-                            onPress={() => {
-                              setSelectedCar(car);
-                              offerHandler();
-                            }}
-                            light
-                            auto
-                            color="warning"
-                            icon={<IoGiftOutline size={20} fill="#979797" />}
-                          ></Button>
-                        </Tooltip>
-                      </Col>
-                      <Col css={{ d: "flex" }}>
-                        <Tooltip content="Details">
-                          <Button
-                            onPress={() => {
-                              setSelectedCar(car);
-                              viewHandler();
-                            }}
-                            light
-                            auto
-                            color="warning"
-                            icon={<EyeIcon size={20} fill="#979797" />}
-                          ></Button>
-                        </Tooltip>
-                      </Col>
-                      <Col css={{ d: "flex" }}>
-                        <Tooltip content="Edit user">
-                          <Button
-                            onPress={() => {
-                              setSelectedCar(car);
-                              editHandler();
-                            }}
-                            light
-                            auto
-                            color="secondary"
-                            icon={<EditIcon size={20} fill="#979797" />}
-                          ></Button>
-                        </Tooltip>
-                      </Col>
-                      <Col css={{ d: "flex" }}>
-                        <Tooltip
-                          content="Delete user"
-                          color="error"
-                          onClick={() => console.log("Delete user")}
-                        >
-                          <Button
-                            onPress={() => {
-                              setSelectedCar(car);
-                              deleteHandler();
-                            }}
-                            light
-                            auto
+              {cars.map((item: Car) => {
+                return (
+                  <Table.Row key={item.carId}>
+                    <Table.Cell>
+                      <Image
+                        width={50}
+                        height={50}
+                        src={`${API_URL_Image}${item.image}`}
+                        alt={item.carName}
+                        objectFit="cover"
+                      />
+                    </Table.Cell>
+                    <Table.Cell>{item.carName}</Table.Cell>
+                    <Table.Cell>{item.price}</Table.Cell>
+                    <Table.Cell>{item.make}</Table.Cell>
+                    <Table.Cell>{item.carModel}</Table.Cell>
+                    <Table.Cell>{item.registrationNumber}</Table.Cell>
+                    <Table.Cell>{item.manufactureYear}</Table.Cell>
+                    <Table.Cell>
+                      {
+                        <Badge color={item.isAvailable ? "success" : "error"}>
+                          {item.isAvailable ? "Available" : "Not Available"}
+                        </Badge>
+                      }
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Row justify="center" align="center">
+                        <Col css={{ d: "flex" }}>
+                          <Tooltip content="Publish Offer">
+                            <Button
+                              onPress={() => {
+                                setSelectedItem(item);
+                                offerHandler();
+                              }}
+                              light
+                              auto
+                              color="warning"
+                              icon={<IoGiftOutline size={20} fill="#979797" />}
+                            ></Button>
+                          </Tooltip>
+                        </Col>
+                        <Col css={{ d: "flex" }}>
+                          <Tooltip content="Details">
+                            <Button
+                              onPress={() => {
+                                setSelectedItem(item);
+                                viewHandler();
+                              }}
+                              light
+                              auto
+                              color="warning"
+                              icon={<EyeIcon size={20} fill="#979797" />}
+                            ></Button>
+                          </Tooltip>
+                        </Col>
+                        <Col css={{ d: "flex" }}>
+                          <Tooltip content="Edit Car">
+                            <Button
+                              onPress={() => {
+                                setSelectedItem(item);
+                                editHandler();
+                              }}
+                              light
+                              auto
+                              color="secondary"
+                              icon={<EditIcon size={20} fill="#979797" />}
+                            ></Button>
+                          </Tooltip>
+                        </Col>
+                        <Col css={{ d: "flex" }}>
+                          <Tooltip
+                            content="Delete Car"
                             color="error"
-                            icon={<DeleteIcon size={20} fill="#FF0080" />}
-                          ></Button>
-                        </Tooltip>
-                      </Col>
-                    </Row>
-                  </Table.Cell>
-                </Table.Row>
-              ))}
+                            onProgress={() => console.log("Delete Car")}
+                          >
+                            <Button
+                              onPress={() => {
+                                setSelectedItem(item);
+                                deleteHandler();
+                              }}
+                              light
+                              auto
+                              color="error"
+                              icon={<DeleteIcon size={20} fill="#FF0080" />}
+                            ></Button>
+                          </Tooltip>
+                        </Col>
+                      </Row>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })}
             </Table.Body>
-            <Table.Pagination
-              shadow
-              noMargin
-              color="primary"
-              align="center"
-              rowsPerPage={3}
-              onPageChange={(page) => console.log({ page })}
-            />
           </Table>
         </Container>
       </Grid.Container>
 
+      {/* Modal for Add  */}
       <Modal
         width="25%"
         closeButton
@@ -323,7 +404,7 @@ const Car = () => {
             size="lg"
             bordered
             label="Model Name"
-            name="carModel"
+            name="model"
             onChange={handleAddDetails}
           />
           <Input
@@ -339,8 +420,8 @@ const Car = () => {
             size="lg"
             bordered
             type="number"
-            label="Manufacturer Year"
-            name="manufactureYear"
+            label="Manufacturer Date"
+            name="manufactureDate"
             onChange={handleAddDetails}
           />
           <Input
@@ -361,12 +442,13 @@ const Car = () => {
             css={{ backgroundColor: "#11181C" }}
             onClick={() => {
               addCar(addDetails)
-                .then((data: any) => {
+                .then((data) => {
                   toast.success("Car Added Successfully");
+                  getCars();
                   setAddDetails(initialDetails);
                   closeHandler();
                 })
-                .catch((error: any) => {
+                .catch((error) => {
                   toast.error(`${error.message}`);
                 });
             }}
@@ -403,7 +485,7 @@ const Car = () => {
                 <Image
                   width="100%"
                   height={600}
-                  src="https://nextui.org/images/fruit-4.jpeg"
+                  src={`${API_URL_Image}${selectedItem.image}`}
                   alt="Default Image"
                   objectFit="cover"
                 />
@@ -417,16 +499,16 @@ const Car = () => {
                 }}
               >
                 <Text size={65} h1>
-                  Toyota
+                  {selectedItem?.carName}
                 </Text>
                 <Spacer y={-2} />
                 <Text h1 size={27}>
-                  Rs. 3500
+                  Rs. {selectedItem?.price}
                 </Text>
 
                 <Spacer y={-1} />
                 <Text size={17}>
-                  Tesla{" "}
+                  {selectedItem?.make}{" "}
                   <span
                     style={{
                       color: "#F5A524",
@@ -435,7 +517,7 @@ const Car = () => {
                   >
                     |
                   </span>{" "}
-                  Model 3{" "}
+                  {selectedItem?.carModel}{" "}
                   <span
                     style={{
                       color: "#F5A524",
@@ -444,10 +526,12 @@ const Car = () => {
                   >
                     |
                   </span>{" "}
-                  23 April, 2023
+                  {selectedItem?.manufactureYear}
                 </Text>
                 <Spacer y={-1.5} />
-                <Text size={17}>Reg. No.: Ko 1 kha 2001</Text>
+                <Text size={17}>
+                  Reg. No.: {selectedItem?.registrationNumber}
+                </Text>
                 <Text size={20}>
                   Pedona - Fashion & Sport Theme for WordPress. Modern clean
                   latest ecommerce woocommerce wordpress template. Online store
@@ -457,7 +541,7 @@ const Car = () => {
               <Badge
                 disableOutline
                 size="sm"
-                color="success"
+                color={selectedItem?.isAvailable ? "success" : "error"}
                 css={{
                   position: "absolute",
                   top: "0px",
@@ -468,7 +552,7 @@ const Car = () => {
                   letterSpacing: "1px",
                 }}
               >
-                Available
+                {selectedItem?.isAvailable ? "Available" : "Not Available"}
               </Badge>
             </Grid>
           </Grid.Container>
@@ -493,47 +577,20 @@ const Car = () => {
           <Input
             clearable
             size="lg"
+            bordered
+            label="Car Name"
+            name="carName"
+            value={selectedItem?.carName}
+            onChange={updateCarDetails}
+          />
+          <Input
+            clearable
+            size="lg"
             underlined
             type="file"
             label="Image"
-            onChange={updateCarDetails}
+            // value={`${baseURL}${selectedItem?.image}`}
             name="image"
-          />
-          <Input
-            clearable
-            size="lg"
-            bordered
-            label="Name"
-            name="carName"
-            value={selectedCar?.carName}
-            onChange={updateCarDetails}
-          />
-          <Input
-            clearable
-            size="lg"
-            bordered
-            label="Model Name"
-            name="carModel"
-            value={selectedCar?.carModel}
-            onChange={updateCarDetails}
-          />
-
-          <Input
-            clearable
-            size="lg"
-            bordered
-            label="Manufacturer"
-            name="manufactureYear"
-            value={selectedCar?.manufactureYear}
-            onChange={updateCarDetails}
-          />
-          <Input
-            clearable
-            size="lg"
-            bordered
-            label="Registration No. "
-            name="registrationNumber"
-            value={selectedCar?.registrationNumber}
             onChange={updateCarDetails}
           />
           <Input
@@ -543,7 +600,44 @@ const Car = () => {
             label="Price"
             type="number"
             name="price"
-            value={selectedCar?.price}
+            value={selectedItem?.price}
+            onChange={updateCarDetails}
+          />
+          <Input
+            clearable
+            size="lg"
+            bordered
+            label="Model Name"
+            name="model"
+            value={selectedItem?.carModel}
+            onChange={updateCarDetails}
+          />
+          <Input
+            clearable
+            size="lg"
+            bordered
+            label="Brand Name"
+            name="make"
+            value={selectedItem?.make}
+            onChange={updateCarDetails}
+          />
+          <Input
+            clearable
+            size="lg"
+            bordered
+            type="number"
+            label="Manufacturer Date"
+            name="manufactureDate"
+            value={selectedItem?.manufactureYear}
+            onChange={updateCarDetails}
+          />
+          <Input
+            clearable
+            size="lg"
+            bordered
+            label="Registration No. "
+            name="registrationNumber"
+            value={selectedItem?.registrationNumber}
             onChange={updateCarDetails}
           />
         </Modal.Body>
@@ -555,7 +649,7 @@ const Car = () => {
             auto
             css={{ backgroundColor: "#11181C" }}
             onClick={() => {
-              updateCar(selectedCar)
+              updateCar(selectedItem)
                 .then((data) => {
                   toast.success("Car Added Successfully");
                   getCars();
@@ -586,10 +680,7 @@ const Car = () => {
             Delete Car
           </Text>
         </Modal.Header>
-        <Modal.Body>
-          {`Do you want to delete 
-          ${selectedCar?.carName}`}
-        </Modal.Body>
+        <Modal.Body>Do you want to delete {selectedItem?.carName}</Modal.Body>
         <Modal.Footer>
           <Button auto flat color="error" onPress={closeHandler}>
             Close
@@ -597,7 +688,7 @@ const Car = () => {
           <Button
             auto
             onPress={() => {
-              deleteCar(selectedCar?.carId ?? 0)
+              deleteCar(selectedItem?.carId ?? 0)
                 .then(() => {
                   getAllCars()
                     .then((cars: Car[]) => {
@@ -612,12 +703,13 @@ const Car = () => {
               setDeleteVisible(false);
             }}
             css={{ backgroundColor: "#11181C" }}
-            onClick={() => {}}
           >
             Delete
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Modal for offer  */}
       <Modal
         width="25%"
         closeButton
@@ -638,15 +730,23 @@ const Car = () => {
             readOnly
             label="Car Name"
             name="carName"
-            value={selectedCar?.carName}
+            value={selectedItem?.carName}
           />
           <Input
-            clearable
             size="lg"
             bordered
             label="Discount"
-            name="discount"
-            onChange={handleOfferDetails}
+            type="number"
+            name="discountPercent"
+            onChange={handleOfferDetials}
+          />
+          <Input
+            size="lg"
+            bordered
+            type="date"
+            label="Ending Date"
+            name="expireDate"
+            onChange={handleOfferDetials}
           />
           <Input
             clearable
@@ -654,21 +754,7 @@ const Car = () => {
             bordered
             label="Description"
             name="message"
-            onChange={handleOfferDetails}
-          />
-          <Input
-            clearable
-            size="lg"
-            type="date"
-            bordered
-            label="End Date"
-            name="expiryDate"
-            onChange={(e) => {
-              setOfferDetail({
-                ...offerDetail,
-                expiryDate: new Date(e.target.value).toISOString(),
-              });
-            }}
+            onChange={handleOfferDetials}
           />
         </Modal.Body>
         <Modal.Footer>
@@ -678,18 +764,22 @@ const Car = () => {
           <Button
             auto
             css={{ backgroundColor: "#11181C" }}
-            onPress={() => {
-              addOffer({ ...offerDetail, carID: selectedCar.carId })
+            onClick={() => {
+              addOffer({ ...offerDetails, carID: selectedItem.carId })
                 .then((data) => {
-                  toast.success("Offer added successfully");
-                  setOfferDetail(initialOffer);
+                  toast.success("Offer Added Successfully");
+                  setOfferDetails(initialOffer);
+                  closeHandler();
                 })
-                .catch((error) => toast.error(`${error.message}`));
+                .catch((error) => {
+                  toast.error(`${error.message}`);
+                });
             }}
           >
             Save
           </Button>
         </Modal.Footer>
+        <ToastContainer />
       </Modal>
       <ToastContainer />
     </>

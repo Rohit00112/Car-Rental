@@ -1,8 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import getMontlySales from "@/Services/MonthlySales/MonthlySales";
+import { Container, Grid } from "@nextui-org/react";
+import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
+import { ToastContainer, toast } from "react-toastify";
+
 const Dashboard = () => {
-  const options = {
+  const data = {
     options: {
       chart: {
         id: "basic-bar",
@@ -13,27 +17,71 @@ const Dashboard = () => {
     },
     series: [
       {
-        name: "series-1",
         data: [30, 40, 45, 50, 49, 60, 70, 91],
       },
     ],
   };
 
-  const [barChart, setBarChart] = useState(options);
+  const [option, setOption] = useState<any>(data);
 
+  useEffect(() => {
+    getMontlySales()
+      .then((datas) => {
+        const categories = Object.keys(datas);
+        const data = Object.values(datas);
+        const updatedOption = {
+          options: {
+            chart: {
+              id: "basic-bar",
+            },
+            xaxis: {
+              categories: categories,
+            },
+          },
+          series: [
+            {
+              data: data,
+            },
+          ],
+        };
+        setOption(updatedOption);
+      })
+      .catch((error) => {
+        toast.error(`${error.message}`);
+      });
+  }, []);
   return (
-    <div className="app">
-      <div className="row">
-        <div className="mixed-chart">
+    <>
+      <Grid.Container
+        css={{
+          width: "95%",
+          margin: "0 auto",
+          "@xs": {
+            width: "73%",
+          },
+        }}
+      >
+        <Container
+          justify="space-between"
+          alignItems="center"
+          css={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            marginTop: "2rem",
+          }}
+        >
           <Chart
-            options={options.options}
-            series={options.series}
+            options={option.options}
+            series={option.series}
             type="bar"
-            width="500"
+            width="1200"
           />
-        </div>
-      </div>
-    </div>
+        </Container>
+      </Grid.Container>
+      <ToastContainer />
+    </>
   );
 };
 

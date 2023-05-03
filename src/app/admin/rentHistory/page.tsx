@@ -5,13 +5,13 @@ import { DeleteIcon } from "@/Components/icons/DeleteIcon";
 import getAllRentalReturn from "@/Services/RentalReturn/GetAllRentalReturn";
 import approveRent from "@/Services/rent/ApproveRent";
 import deleteRent from "@/Services/rent/DeleteRent";
-import getAllRents from "@/Services/rent/GetAllRents";
 import {
   Button,
   Col,
   Container,
   Grid,
   Image,
+  Input,
   Modal,
   Row,
   Table,
@@ -39,6 +39,8 @@ const Rent = () => {
     console.log("closed");
   };
 
+  //   -------------------------- rents -------------------------
+
   const [rents, setRents] = useState<ReturnRents[]>([]);
 
   const [selectedRent, setSelectedRent] = useState<ReturnRents>();
@@ -54,7 +56,29 @@ const Rent = () => {
 
   useEffect(() => {
     getRents();
+    // console.log(offers);
   }, []);
+
+  const dateFilter = (e: any) => {
+    const results: ReturnRents[] = [];
+    getAllRentalReturn()
+      .then((data: ReturnRents[]) => {
+        if (e.target.value == "") {
+          setRents(data);
+        } else {
+          const pickedDate = new Date(e.target.value).toISOString();
+          data.forEach((item) => {
+            if (
+              item.returnDate.substring(0, 10) == pickedDate.substring(0, 10)
+            ) {
+              results.push(item);
+            }
+          });
+          setRents(results);
+        }
+      })
+      .catch((e) => toast.error(e.message));
+  };
 
   return (
     <>
@@ -74,6 +98,25 @@ const Rent = () => {
               Rental History
             </Text>
           </Grid>
+          <Grid
+            justify="space-between"
+            alignItems="center"
+            css={{ width: "200px", display: "flex" }}
+          >
+            <Input
+              width="120px"
+              type="date"
+              onChange={dateFilter}
+              status="secondary"
+            />
+            <Button
+              auto
+              onPress={getRents}
+              css={{ backgroundColor: "$accents9" }}
+            >
+              All
+            </Button>
+          </Grid>
         </Container>
         <Container>
           <Table
@@ -89,18 +132,17 @@ const Rent = () => {
             <Table.Header>
               <Table.Column>Image</Table.Column>
               <Table.Column>NAME</Table.Column>
-              <Table.Column>Price</Table.Column>
-
-              <Table.Column>Rent By</Table.Column>
               <Table.Column>Rent Date</Table.Column>
               <Table.Column>Return Date</Table.Column>
               <Table.Column>Accepted By</Table.Column>
+              <Table.Column>Rented By</Table.Column>
+              <Table.Column>Total Amount</Table.Column>
               <Table.Column css={{ width: "8%" }}>ACTION</Table.Column>
             </Table.Header>
             <Table.Body>
               {rents.map((item: ReturnRents) => {
                 return (
-                  <Table.Row key={item.rentID}>
+                  <Table.Row key={item.id}>
                     <Table.Cell>
                       <Image
                         width={50}
@@ -111,8 +153,6 @@ const Rent = () => {
                       />
                     </Table.Cell>
                     <Table.Cell>{item.rent.car.carName}</Table.Cell>
-                    <Table.Cell>{item.rent.car.price}</Table.Cell>
-                    <Table.Cell>{item.customer?.userName}</Table.Cell>
                     <Table.Cell>
                       {new Date(item.rent.rentDate).toLocaleString()}
                     </Table.Cell>
@@ -120,6 +160,8 @@ const Rent = () => {
                       {new Date(item.returnDate).toLocaleString()}
                     </Table.Cell>
                     <Table.Cell>{item.staff?.userName ?? "Not yet"}</Table.Cell>
+                    <Table.Cell>{item.rent.customer?.userName}</Table.Cell>
+                    <Table.Cell>Rs. {item.amount}</Table.Cell>
                     <Table.Cell>
                       <Row justify="center" align="center">
                         {item.rent.status == 0 && (
@@ -192,7 +234,7 @@ const Rent = () => {
           <Button
             auto
             onPress={() => {
-              deleteRent(selectedRent?.rentID ?? 0)
+              deleteRent(selectedRent?.id ?? 0)
                 .then(() => {
                   getRents();
                   toast.success("Rent Deleted Successfully");
@@ -234,13 +276,13 @@ const Rent = () => {
           <Button
             auto
             onPress={() => {
-              approveRent(selectedRent?.rentID ?? 0)
+              approveRent(selectedRent?.id ?? 0)
                 .then(() => {
                   getRents();
                   toast.success("Rent Approved Successfully");
                   setStatusVisible(false);
                 })
-                .catch((error) => {
+                .catch((error: any) => {
                   toast.error(`${error.message}`);
                 });
             }}
